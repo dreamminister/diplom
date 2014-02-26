@@ -593,9 +593,10 @@ int _tmain(int argc, _TCHAR* argv[])
       for (i=0;i<256;i++)
 	  {
 		if (state.SBox[i]!=stateguess.SBox[i])
-			everythingcorrect=0; 
-		
-		i=256;
+			{
+				everythingcorrect=0; 		
+				i=256;
+			}
 	  }
       
 	  if (everythingcorrect)
