@@ -6,9 +6,10 @@
 #include "sss.h"
 #include "ssssbox.h"
 #include "sssmultab.h"
+#include <iostream>
 
 // Number of extra patterns to recover a_H
-#define NEXTRA 8
+#define NumberOfExtraPatterns 8
 
 /* some useful macros -- machine independent little-endian 2-byte words */
 #define B(x,i) ((UCHAR)(((x) >> (8*i)) & 0xFF))
@@ -27,7 +28,7 @@
 
 /* key-dependent Sbox function -- after the model used by Turing */
 WORD
-Sfunc(UCHAR *key, int keylen, WORD w)
+Sfunc(UCHAR *Key, int KeyLength, WORD w)
 {
     register int	i;
     WORD		t;
@@ -35,8 +36,8 @@ Sfunc(UCHAR *key, int keylen, WORD w)
 
     t = 0;
     b = HIGHBYTE(w);
-    for (i = 0; i < keylen; ++i) {
-	b = ftable[b ^ key[i]];
+    for (i = 0; i < KeyLength; ++i) {
+	b = ftable[b ^ Key[i]];
 	t ^= ROTL(Qbox[b], i);
     }
     return ((b << (WORDBITS-8)) | (t & LOWMASK)) ^ (w & LOWMASK);
@@ -44,16 +45,16 @@ Sfunc(UCHAR *key, int keylen, WORD w)
 
 /* cycle the contents of the shift register */
 static void
-cycle(sss_ctx *c, WORD ctxt)
+cycle(sss_ctx *State, WORD ctxt)
 {
     register int    i;
 
     for (i = 0; i < N-1; ++i)
-	c->R[i] = c->R[i+1];
-    c->R[16] = ctxt;
-    c->R[14] += S(c, ROTR(ctxt, 8));
-    c->R[12] = S(c, c->R[12]);
-    c->R[1] = ROTR(c->R[1], 8);
+	State->ShiftRegister[i] = State->ShiftRegister[i+1];
+    State->ShiftRegister[16] = ctxt;
+    State->ShiftRegister[14] += SBoxFromWord(State, ROTR(ctxt, 8));
+    State->ShiftRegister[12] = SBoxFromWord(State, State->ShiftRegister[12]);
+    State->ShiftRegister[1] = ROTR(State->ShiftRegister[1], 8);
 }
 
 /*
@@ -66,12 +67,12 @@ nltap(sss_ctx *c)
 {
     register WORD	t;
 
-    t = c->R[0] + c->R[16];
+    t = c->ShiftRegister[0] + c->ShiftRegister[16];
     //printf("OK? %04x\n",t);
-    t = S(c,t) + c->R[1] + c->R[6] + c->R[13];
+    t = SBoxFromWord(c,t) + c->ShiftRegister[1] + c->ShiftRegister[6] + c->ShiftRegister[13];
     t = ROTR(t, 8);
     //printf("inputlastf %04x\n",t); 
-    return S(c,t) ^ c->R[0];
+    return SBoxFromWord(c,t) ^ c->ShiftRegister[0];
 }
 
 /*
@@ -112,18 +113,17 @@ crccycle(sss_ctx *c, WORD w)
  * Precompute the key-dependent Sbox for later efficiency.
  */
 void
-sss_key(sss_ctx *c, UCHAR key[], int keylen)
+sss_key(sss_ctx *State, UCHAR Key[], int KeyLength)
 {
     int	    i;
 
-    if (keylen > MAXKEY)
+    if (KeyLength > MAXKEY)
 	abort();
     for (i = 0; i < 256; ++i)
-	c->SBox[i] = Sfunc(key, keylen, (WORD)(i << (WORDBITS-8)))
-	    ^ (i << (WORDBITS-8));
+	State->SBox[i] = Sfunc(Key, KeyLength, (WORD)(i << (WORDBITS-8))) ^ (i << (WORDBITS-8));
 
     /* in case no nonce... */
-    sss_nonce(c, (UCHAR *)0, 0);
+    sss_nonce(State, (UCHAR *)0, 0);
 }
 #else
 /*
@@ -153,7 +153,7 @@ sss_key(sss_ctx *c, UCHAR key[], int keylen)
  * Then MAC N words of zeros (completely diffuses nonce).
  */
 void
-sss_nonce(sss_ctx *c, UCHAR nonce[], int nlen)
+sss_nonce(sss_ctx *State, UCHAR nonce[], int nlen)
 {
     int		i;
     UCHAR	nb[2];
@@ -162,22 +162,22 @@ sss_nonce(sss_ctx *c, UCHAR nonce[], int nlen)
 	abort();
     /* first fill both registers with zeros */
     for (i = 0; i < N; ++i)
-	c->R[i] = c->CRC[i] = 0;
+	State->ShiftRegister[i] = State->CRC[i] = 0;
 
     /* now process words of the nonce */
     for (i = 0; i < nlen; i += WORDBYTES) {
 	nb[0] = nonce[i];
 	nb[1] = nonce[i+1];
-	sss_decrypt(c, nb, WORDBYTES);
+	sss_decrypt(State, nb, WORDBYTES);
     }
 
     /* now MAC N words of zeros */
     nb[0] = nb[1] = 0;
     for (i = 0; i < N; ++i) {
-	sss_maconly(c, nb, WORDBYTES);
+	sss_maconly(State, nb, WORDBYTES);
     }
 
-    c->nbuf = 0;
+    State->NumberOfBitsBuffered = 0;
 }
 
 /* encryption.
@@ -189,19 +189,19 @@ sss_enconly(sss_ctx *c, UCHAR *buf, int nbytes)
     WORD	t = 0;
 
     /* handle any previously buffered bytes */
-    if (c->nbuf != 0) {
-	while (c->nbuf != 0 && nbytes != 0) {
-	    *buf ^= c->sbuf & 0xFF;
-	    c->cbuf ^= *buf << (WORDBITS - c->nbuf);
-	    c->sbuf >>= 8;
+    if (c->NumberOfBitsBuffered != 0) {
+	while (c->NumberOfBitsBuffered != 0 && nbytes != 0) {
+	    *buf ^= c->StreamBuf & 0xFF;
+	    c->CipherTextBuf ^= *buf << (WORDBITS - c->NumberOfBitsBuffered);
+	    c->StreamBuf >>= 8;
 	    ++buf;
-	    c->nbuf -= 8;
+	    c->NumberOfBitsBuffered -= 8;
 	    --nbytes;
 	}
-	if (c->nbuf != 0) /* still not a whole word yet */
+	if (c->NumberOfBitsBuffered != 0) /* still not a whole word yet */
 	    return;
 	/* Accrue that ciphertext word */
-	cycle(c, c->cbuf);
+	cycle(c, c->CipherTextBuf);
     }
 
     /* handle whole words */
@@ -216,14 +216,14 @@ sss_enconly(sss_ctx *c, UCHAR *buf, int nbytes)
 
     /* handle any trailing bytes */
     if (nbytes != 0) {
-	c->sbuf = nltap(c);
-	c->cbuf = 0;
-	c->nbuf = WORDBITS;
-	while (c->nbuf != 0 && nbytes != 0) {
-	    *buf ^= c->sbuf & 0xFF;
-	    c->sbuf >>= 8;
-	    c->cbuf ^= *buf << (WORDBITS - c->nbuf);
-	    c->nbuf -= 8;
+	c->StreamBuf = nltap(c);
+	c->CipherTextBuf = 0;
+	c->NumberOfBitsBuffered = WORDBITS;
+	while (c->NumberOfBitsBuffered != 0 && nbytes != 0) {
+	    *buf ^= c->StreamBuf & 0xFF;
+	    c->StreamBuf >>= 8;
+	    c->CipherTextBuf ^= *buf << (WORDBITS - c->NumberOfBitsBuffered);
+	    c->NumberOfBitsBuffered -= 8;
 	    --nbytes;
 	}
     }
@@ -233,49 +233,49 @@ sss_enconly(sss_ctx *c, UCHAR *buf, int nbytes)
  * (Don't mix with MAC operations)
  */
 void
-sss_deconly(sss_ctx *c, UCHAR *buf, int nbytes)
+sss_deconly(sss_ctx *State, UCHAR *CipherTextBuffer, int CipherTextLength)
 {
     WORD	t = 0, t2 = 0;
 
     /* handle any previously buffered bytes */
-    if (c->nbuf != 0) {
-	while (c->nbuf != 0 && nbytes != 0) {
-	    c->cbuf ^= *buf << (WORDBITS - c->nbuf);
-	    *buf ^= c->sbuf & 0xFF;
-	    c->sbuf >>= 8;
-	    c->nbuf -= 8;
-	    ++buf;
-	    --nbytes;
+    if (State->NumberOfBitsBuffered != 0) {
+	while (State->NumberOfBitsBuffered != 0 && CipherTextLength != 0) {
+	    State->CipherTextBuf ^= *CipherTextBuffer << (WORDBITS - State->NumberOfBitsBuffered);
+	    *CipherTextBuffer ^= State->StreamBuf & 0xFF;
+	    State->StreamBuf >>= 8;
+	    State->NumberOfBitsBuffered -= 8;
+	    ++CipherTextBuffer;
+	    --CipherTextLength;
 	}
-	if (c->nbuf != 0) /* still not a whole word yet */
+	if (State->NumberOfBitsBuffered != 0) /* still not a whole word yet */
 	    return;
 	/* Accrue that ciphertext word */
-	cycle(c, c->cbuf);
+	cycle(State, State->CipherTextBuf);
     }
 
     /* handle whole words */
-    while (nbytes >= WORDBYTES)
+    while (CipherTextLength >= WORDBYTES)
     {
-      t = nltap(c); 
-	t2 = BYTE2WORD(buf);
-	cycle(c, t2);
+      t = nltap(State); 
+	t2 = BYTE2WORD(CipherTextBuffer);
+	cycle(State, t2);
 	t ^= t2;
-	WORD2BYTE(t, buf);
-	buf += WORDBYTES;
-	nbytes -= WORDBYTES;
+	WORD2BYTE(t, CipherTextBuffer);
+	CipherTextBuffer += WORDBYTES;
+	CipherTextLength -= WORDBYTES;
     }
 
     /* handle any trailing bytes */
-    if (nbytes != 0) {
-	c->sbuf = nltap(c);
-	c->cbuf = 0;
-	c->nbuf = WORDBITS;
-	while (c->nbuf != 0 && nbytes != 0) {
-	    c->cbuf ^= *buf << (WORDBITS - c->nbuf);
-	    *buf ^= c->sbuf & 0xFF;
-	    c->sbuf >>= 8;
-	    c->nbuf -= 8;
-	    --nbytes;
+    if (CipherTextLength != 0) {
+	State->StreamBuf = nltap(State);
+	State->CipherTextBuf = 0;
+	State->NumberOfBitsBuffered = WORDBITS;
+	while (State->NumberOfBitsBuffered != 0 && CipherTextLength != 0) {
+	    State->CipherTextBuf ^= *CipherTextBuffer << (WORDBITS - State->NumberOfBitsBuffered);
+	    *CipherTextBuffer ^= State->StreamBuf & 0xFF;
+	    State->StreamBuf >>= 8;
+	    State->NumberOfBitsBuffered -= 8;
+	    --CipherTextLength;
 	}
     }
 }
@@ -289,21 +289,21 @@ sss_encrypt(sss_ctx *c, UCHAR *buf, int nbytes)
     WORD	t = 0;
 
     /* handle any previously buffered bytes */
-    if (c->nbuf != 0) {
-	while (c->nbuf != 0 && nbytes != 0) {
-	    c->mbuf ^= *buf << (WORDBITS - c->nbuf);
-	    *buf ^= c->sbuf & 0xFF;
-	    c->cbuf ^= *buf << (WORDBITS - c->nbuf);
-	    c->sbuf >>= 8;
+    if (c->NumberOfBitsBuffered != 0) {
+	while (c->NumberOfBitsBuffered != 0 && nbytes != 0) {
+	    c->MacBuf ^= *buf << (WORDBITS - c->NumberOfBitsBuffered);
+	    *buf ^= c->StreamBuf & 0xFF;
+	    c->CipherTextBuf ^= *buf << (WORDBITS - c->NumberOfBitsBuffered);
+	    c->StreamBuf >>= 8;
 	    ++buf;
-	    c->nbuf -= 8;
+	    c->NumberOfBitsBuffered -= 8;
 	    --nbytes;
 	}
-	if (c->nbuf != 0) /* still not a whole word yet */
+	if (c->NumberOfBitsBuffered != 0) /* still not a whole word yet */
 	    return;
 	/* Accrue that ciphertext word */
-	cycle(c, c->cbuf);
-	crccycle(c, c->mbuf);
+	cycle(c, c->CipherTextBuf);
+	crccycle(c, c->MacBuf);
     }
 
     /* handle whole words */
@@ -320,16 +320,16 @@ sss_encrypt(sss_ctx *c, UCHAR *buf, int nbytes)
 
     /* handle any trailing bytes */
     if (nbytes != 0) {
-	c->mbuf = 0;
-	c->sbuf = nltap(c);
-	c->cbuf = 0;
-	c->nbuf = WORDBITS;
-	while (c->nbuf != 0 && nbytes != 0) {
-	    c->mbuf ^= *buf << (WORDBITS - c->nbuf);
-	    *buf ^= c->sbuf & 0xFF;
-	    c->cbuf ^= *buf << (WORDBITS - c->nbuf);
-	    c->sbuf >>= 8;
-	    c->nbuf -= 8;
+	c->MacBuf = 0;
+	c->StreamBuf = nltap(c);
+	c->CipherTextBuf = 0;
+	c->NumberOfBitsBuffered = WORDBITS;
+	while (c->NumberOfBitsBuffered != 0 && nbytes != 0) {
+	    c->MacBuf ^= *buf << (WORDBITS - c->NumberOfBitsBuffered);
+	    *buf ^= c->StreamBuf & 0xFF;
+	    c->CipherTextBuf ^= *buf << (WORDBITS - c->NumberOfBitsBuffered);
+	    c->StreamBuf >>= 8;
+	    c->NumberOfBitsBuffered -= 8;
 	    --nbytes;
 	    ++buf;
 	}
@@ -345,21 +345,21 @@ sss_decrypt(sss_ctx *c, UCHAR *buf, int nbytes)
     WORD	t = 0, t2 = 0;;
 
     /* handle any previously buffered bytes */
-    if (c->nbuf != 0) {
-	while (c->nbuf != 0 && nbytes != 0) {
-	    c->cbuf ^= *buf << (WORDBITS - c->nbuf);
-	    *buf ^= c->sbuf & 0xFF;
-	    c->mbuf ^= *buf << (WORDBITS - c->nbuf);
+    if (c->NumberOfBitsBuffered != 0) {
+	while (c->NumberOfBitsBuffered != 0 && nbytes != 0) {
+	    c->CipherTextBuf ^= *buf << (WORDBITS - c->NumberOfBitsBuffered);
+	    *buf ^= c->StreamBuf & 0xFF;
+	    c->MacBuf ^= *buf << (WORDBITS - c->NumberOfBitsBuffered);
 	    ++buf;
-	    c->sbuf >>= 8;
-	    c->nbuf -= 8;
+	    c->StreamBuf >>= 8;
+	    c->NumberOfBitsBuffered -= 8;
 	    --nbytes;
 	}
-	if (c->nbuf != 0) /* still not a whole word yet */
+	if (c->NumberOfBitsBuffered != 0) /* still not a whole word yet */
 	    return;
 	/* Accrue that ciphertext word */
-	cycle(c, c->cbuf);
-	crccycle(c, c->mbuf);
+	cycle(c, c->CipherTextBuf);
+	crccycle(c, c->MacBuf);
     }
 
     /* handle whole words */
@@ -377,17 +377,17 @@ sss_decrypt(sss_ctx *c, UCHAR *buf, int nbytes)
 
     /* handle any trailing bytes */
     if (nbytes != 0) {
-	c->sbuf = nltap(c);
-	c->cbuf = 0;
-	c->mbuf = 0;
-	c->nbuf = WORDBITS;
-	while (c->nbuf != 0 && nbytes != 0) {
-	    c->cbuf ^= *buf << (WORDBITS - c->nbuf);
-	    *buf ^= c->sbuf & 0xFF;
-	    c->mbuf ^= *buf << (WORDBITS - c->nbuf);
-	    c->sbuf >>= 8;
+	c->StreamBuf = nltap(c);
+	c->CipherTextBuf = 0;
+	c->MacBuf = 0;
+	c->NumberOfBitsBuffered = WORDBITS;
+	while (c->NumberOfBitsBuffered != 0 && nbytes != 0) {
+	    c->CipherTextBuf ^= *buf << (WORDBITS - c->NumberOfBitsBuffered);
+	    *buf ^= c->StreamBuf & 0xFF;
+	    c->MacBuf ^= *buf << (WORDBITS - c->NumberOfBitsBuffered);
+	    c->StreamBuf >>= 8;
 	    ++buf;
-	    c->nbuf -= 8;
+	    c->NumberOfBitsBuffered -= 8;
 	    --nbytes;
 	}
     }
@@ -403,21 +403,21 @@ sss_maconly(sss_ctx *c, UCHAR *buf, int nbytes)
     UCHAR	ct;
 
     /* handle any previously buffered bytes */
-    if (c->nbuf != 0) {
-	while (c->nbuf != 0 && nbytes != 0) {
-	    ct = *buf ^ (c->sbuf & 0xFF);
-	    c->cbuf ^= ct << (WORDBITS - c->nbuf);
-	    c->mbuf ^= ct << (WORDBITS - c->nbuf);
+    if (c->NumberOfBitsBuffered != 0) {
+	while (c->NumberOfBitsBuffered != 0 && nbytes != 0) {
+	    ct = *buf ^ (c->StreamBuf & 0xFF);
+	    c->CipherTextBuf ^= ct << (WORDBITS - c->NumberOfBitsBuffered);
+	    c->MacBuf ^= ct << (WORDBITS - c->NumberOfBitsBuffered);
 	    ++buf;
-	    c->sbuf >>= 8;
-	    c->nbuf -= 8;
+	    c->StreamBuf >>= 8;
+	    c->NumberOfBitsBuffered -= 8;
 	    --nbytes;
 	}
-	if (c->nbuf != 0) /* still not a whole word yet */
+	if (c->NumberOfBitsBuffered != 0) /* still not a whole word yet */
 	    return;
 	/* Accrue that ciphertext word */
-	cycle(c, c->cbuf);
-	crccycle(c, c->mbuf);
+	cycle(c, c->CipherTextBuf);
+	crccycle(c, c->MacBuf);
     }
 
     /* handle whole words */
@@ -433,17 +433,17 @@ sss_maconly(sss_ctx *c, UCHAR *buf, int nbytes)
 
     /* handle any trailing bytes */
     if (nbytes != 0) {
-	c->sbuf = nltap(c);
-	c->cbuf = 0;
-	c->mbuf = 0;
-	c->nbuf = WORDBITS;
-	while (c->nbuf != 0 && nbytes != 0) {
-	    ct = *buf ^ (c->sbuf & 0xFF);
-	    c->cbuf ^= ct << (WORDBITS - c->nbuf);
-	    c->mbuf ^= ct << (WORDBITS - c->nbuf);
-	    c->sbuf >>= 8;
+	c->StreamBuf = nltap(c);
+	c->CipherTextBuf = 0;
+	c->MacBuf = 0;
+	c->NumberOfBitsBuffered = WORDBITS;
+	while (c->NumberOfBitsBuffered != 0 && nbytes != 0) {
+	    ct = *buf ^ (c->StreamBuf & 0xFF);
+	    c->CipherTextBuf ^= ct << (WORDBITS - c->NumberOfBitsBuffered);
+	    c->MacBuf ^= ct << (WORDBITS - c->NumberOfBitsBuffered);
+	    c->StreamBuf >>= 8;
 	    ++buf;
-	    c->nbuf -= 8;
+	    c->NumberOfBitsBuffered -= 8;
 	    --nbytes;
 	}
     }
@@ -457,21 +457,21 @@ void
 sss_finish(sss_ctx *c, UCHAR *buf, int nbytes)
 {
     int		i;
-    WORD	w = c->nbuf;
+    WORD	w = c->NumberOfBitsBuffered;
     UCHAR	ct;
 
     /* handle any previously buffered bytes */
-    if (c->nbuf != 0) {
-	while (c->nbuf != 0) {
-	    ct = c->sbuf & 0xFF; /* as if encrypted zero byte */
-	    c->cbuf ^= ct << (WORDBITS - c->nbuf);
-	    c->mbuf ^= ct << (WORDBITS - c->nbuf);
-	    c->sbuf >>= 8;
-	    c->nbuf -= 8;
+    if (c->NumberOfBitsBuffered != 0) {
+	while (c->NumberOfBitsBuffered != 0) {
+	    ct = c->StreamBuf & 0xFF; /* as if encrypted zero byte */
+	    c->CipherTextBuf ^= ct << (WORDBITS - c->NumberOfBitsBuffered);
+	    c->MacBuf ^= ct << (WORDBITS - c->NumberOfBitsBuffered);
+	    c->StreamBuf >>= 8;
+	    c->NumberOfBitsBuffered -= 8;
 	}
 	/* Accrue that ciphertext and MAC word */
-	cycle(c, c->cbuf);
-	crccycle(c, c->mbuf);
+	cycle(c, c->CipherTextBuf);
+	crccycle(c, c->MacBuf);
     }
     
     /* Perturb only the stream cipher state to mark end of input,
@@ -511,10 +511,10 @@ sss_finish(sss_ctx *c, UCHAR *buf, int nbytes)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	sss_ctx state;      // the state we are trying to determine
+  sss_ctx state;      // the state we are trying to determine
   sss_ctx stateguess; // our guess for the state 
-  UCHAR ciphertext[36*256 + 36*NEXTRA]; // our chosen ciphertext, which will be always the same to recover any secret key
-  UCHAR plaintext[36*256 + 36*NEXTRA];  // the decrypted plaintext corresponding to our ciphertext
+  UCHAR ciphertext[36*256 + 36*NumberOfExtraPatterns]; // our chosen ciphertext, which will be always the same to recover any secret key
+  UCHAR plaintext[36*256 + 36*NumberOfExtraPatterns];  // the decrypted plaintext corresponding to our ciphertext
   int i,j,ciphertextsize,correct;
   int ctr_aL, ctr_SaL;
   UCHAR aL, aH, aHg1,aHg2;
@@ -523,67 +523,89 @@ int _tmain(int argc, _TCHAR* argv[])
   WORD a,rotateda, aplusi,rotatedaplusi;
   int everythingcorrect;
 
-  ciphertextsize=36*256 + 36*NEXTRA;
+  ciphertextsize=36*256 + 36*NumberOfExtraPatterns;
 
   //We use a zero key and print the actual secret key-dependent SBox - You can put any other key here. 
-  UCHAR zerokey[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-  sss_key(&state,zerokey,16);
+  UCHAR zerokey[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+  sss_key(&state, zerokey, 16);
   //  for (i=0;i<256;i++) printf("%02x \t %04x\n",i,state.SBox[i]);
   
   // Now we choose our ciphertext
-  for (i=0;i<ciphertextsize;i++) ciphertext[i]=0; 
-  for (i=0;i<256;i++)            ciphertext[36*i+26]=i;        // 255 modifications in LSB of r[13]
-  for (i=0;i<NEXTRA;i++)         ciphertext[256*36+36*i+27]=i; // NEXTRA modifications in MSB of r[13]
+  for (i=0;i<ciphertextsize;i++) 
+	  ciphertext[i]=0; 
+
+  for (i=0;i<256;i++)            
+	  ciphertext[36*i+26]=i;        // 255 modifications in LSB of r[13]
+
+  for (i = 0; i < NumberOfExtraPatterns; i++)         
+	  ciphertext[256*36+36*i+27] = i; // NumberOfExtraPatterns modifications in MSB of r[13]
 
   // And obtain the corresponding plaintext
-  for (i=0;i<ciphertextsize;i++) plaintext[i]=ciphertext[i];  
-  sss_deconly(&state,plaintext,ciphertextsize);
+  for (i=0; i < ciphertextsize; i++) 
+	  plaintext[i] = ciphertext[i];
 
-  for (ctr_aL=0;ctr_aL<256;ctr_aL++){
+  sss_deconly(&state, plaintext, ciphertextsize);
+
+  for (ctr_aL=0; ctr_aL < 256; ctr_aL++)
+  {
     //for (ctr_aL=0x11;ctr_aL<0x12;ctr_aL++){
-    aL=ctr_aL;
-    
+    aL=ctr_aL;    
     // determine a_H
     aH=0;
     //for (i=0;i<256;i++){ // try all possible aH
-    for (i=0;i<256;i++){ // try all possible aH
+    for (i=0;i<256;i++)
+	{ // try all possible aH
       aHg1=i;
       correct=1;
-      for (j=0;j<NEXTRA;j++){
-	aHg2=aHg1+j;
-	if ( (plaintext[34]^plaintext[256*36+36*j+34]) != (aHg1^aHg2) ) correct=0; //{correct=0; printf("probleem\n");} else printf("geen probleem!\n");
+      for (j=0;j<NumberOfExtraPatterns;j++)
+	  {
+		aHg2=aHg1+j;
+		if ( (plaintext[34]^plaintext[256*36+36*j+34]) != (aHg1^aHg2) ) 
+			correct=0; //{correct=0; printf("probleem\n");} else printf("geen probleem!\n");
       }
-      if (correct) aH=aHg1; //{aH=aHg1; printf("%02x\n",aH);}
+      if (correct)
+		  aH=aHg1; //{aH=aHg1; printf("%02x\n",aH);}
     }
     a = (aH<<8)^aL;
     rotateda=(aL<<8)^aH;
-    for (ctr_SaL=0;ctr_SaL<65536;ctr_SaL++){
+    for (ctr_SaL=0;ctr_SaL<65536;ctr_SaL++)
+	{
       //for (ctr_SaL=0x4cd9;ctr_SaL<0x4cda;ctr_SaL++){
       // Set the guess back on the beginning values
-      for (i=0;i<256;i++) stateguess.SBox[i]=0;
+      for (i=0;i<256;i++) 
+		  stateguess.SBox[i]=0;
+
       stateguess.SBox[aL]=ctr_SaL;
 
-
       // determine the entire SBox
-      for (i=1;i<256;i++){
-	aplusi=a+i; 
-	rotatedaplusi=((aplusi&0xff)<<8) ^ ((aplusi&0xff00)>>8);
-	//printf("aplusi %04x\t rotated %04x\n",aplusi,rotatedaplusi);
-	SBoxinput=(aL+i); //printf("%d\n",SBoxinput);
-	stateguess.SBox[SBoxinput]=(plaintext[35]<<8)^plaintext[34]^(plaintext[36*i+35]<<8)^plaintext[36*i+34]^stateguess.SBox[aL]^rotateda^rotatedaplusi;
-      }
-      
-      //for (i=1;i<256;i++) printf("%02x\t Actual: %04x \t Guess: %04x\n",i,state.SBox[i],stateguess.SBox[i]);
-      
+      for (i=1;i<256;i++)
+	  {
+		aplusi=a+i; 
+		rotatedaplusi = ((aplusi&0xff)<<8) ^ ((aplusi&0xff00)>>8);
+		//printf("aplusi %04x\t rotated %04x\n",aplusi,rotatedaplusi);
+		SBoxinput=(aL+i); //printf("%d\n",SBoxinput);
+		stateguess.SBox[SBoxinput]=(plaintext[35]<<8)^plaintext[34]^(plaintext[36*i+35]<<8)^plaintext[36*i+34]^stateguess.SBox[aL]^rotateda^rotatedaplusi;
+      }      
+      //for (i=1;i<256;i++) printf("%02x\t Actual: %04x \t Guess: %04x\n",i,state.SBox[i],stateguess.SBox[i]);      
       // Print the solution if it's the correct one:
       everythingcorrect=1;
-      for (i=0;i<256;i++){
-	if (state.SBox[i]!=stateguess.SBox[i]) { everythingcorrect=0; i=256;}
-	}      
-      if (everythingcorrect){
-	printf("The key has been recovered entirely!\n"); 
-	for (i=0;i<256;i++) printf("%02x\t Actual: %04x \t Guess: %04x\n",i,state.SBox[i],stateguess.SBox[i]);
-	ctr_aL=256; ctr_SaL=65536; // we end here // - we now don't do it to estimate the time...
+
+      for (i=0;i<256;i++)
+	  {
+		if (state.SBox[i]!=stateguess.SBox[i])
+			everythingcorrect=0; 
+		
+		i=256;
+	  }
+      
+	  if (everythingcorrect)
+	  {
+		printf("The key has been recovered entirely!\n"); 
+		for (i=0;i<256;i++) 
+			std::cout<<i<<" "<<state.SBox[i]<<" "<<stateguess.SBox[i]<<std::endl;
+			//printf("%02x\t Actual: %04d \t Guess: %04d\n",i,state.SBox[i],stateguess.SBox[i]);
+
+		ctr_aL=256; ctr_SaL=65536; // we end here // - we now don't do it to estimate the time...
       }
 
     }

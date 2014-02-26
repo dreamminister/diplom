@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SBOX_PRECOMP 1
 
 typedef struct {
-    WORD	R[N];		/* Working storage for the shift register */
+    WORD	ShiftRegister[N];		/* Working storage for the shift register */
     WORD	CRC[N];		/* working storage for the CRC register */
 #if SBOX_PRECOMP
     WORD	SBox[256];	/* key dependent SBox */
@@ -37,17 +37,17 @@ typedef struct {
     UCHAR	key[MAXKEY];	/* copy of key */
     int		keylen;		/* length of key in bytes */
 #endif /*SBOX_PRECOMP*/
-    WORD	sbuf;		/* partial word stream buffer */
-    WORD	cbuf;		/* partial word ciphertext buffer */
-    WORD	mbuf;		/* partial word MAC input buffer */
-    int		nbuf;		/* number of part-word stream bits buffered */
+    WORD	StreamBuf;		/* partial word stream buffer */
+    WORD	CipherTextBuf;		/* partial word ciphertext buffer */
+    WORD	MacBuf;		/* partial word MAC input buffer */
+    int		NumberOfBitsBuffered;		/* number of part-word stream bits buffered */
 } sss_ctx;
 
 #if SBOX_PRECOMP
 /* Run a word through the SBox, assuming it is precalculated */
-#define S(c,w) ((c->SBox[HIGHBYTE(w)]) ^ (w))
+#define SBoxFromWord(State,Word) ((State->SBox[HIGHBYTE(Word)]) ^ (Word))
 #else
-#define S(c,w) Sfunc((c)->key, (c)->keylen, (WORD)(w))
+#define SBoxFromWord(c,w) Sfunc((c)->key, (c)->keylen, (WORD)(w))
 #endif /*SBOX_PRECOMP*/
 
 #define HIGHBYTE(w) (((w) >> (WORDBITS - 8)) & 0xFF)
