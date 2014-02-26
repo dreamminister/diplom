@@ -511,102 +511,102 @@ sss_finish(sss_ctx *c, UCHAR *buf, int nbytes)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-  sss_ctx state;      // the state we are trying to determine
-  sss_ctx stateguess; // our guess for the state 
-  UCHAR ciphertext[36*256 + 36*NumberOfExtraPatterns]; // our chosen ciphertext, which will be always the same to recover any secret key
-  UCHAR plaintext[36*256 + 36*NumberOfExtraPatterns];  // the decrypted plaintext corresponding to our ciphertext
-  int i,j,ciphertextsize,correct;
+  sss_ctx State;      // the State we are trying to determine
+  sss_ctx StateGuess; // our guess for the State 
+  UCHAR CipherText[36*256 + 36*NumberOfExtraPatterns]; // our chosen CipherText, which will be always the same to recover any secret key
+  UCHAR PlainText[36*256 + 36*NumberOfExtraPatterns];  // the decrypted PlainText corresponding to our CipherText
+  int i,j,CipherTextLength,correct;
   int ctr_aL, ctr_SaL;
   UCHAR aL, aH, aHg1,aHg2;
-  UCHAR SBoxinput;
-  WORD SBoxguess;
-  WORD a,rotateda, aplusi,rotatedaplusi;
-  int everythingcorrect;
+  UCHAR SboxInput;
+  WORD SboxGuess;
+  WORD a, Rotated_a, a_plus_i, Rotated_a_plus_i;
+  int EverythingCorrect;
 
-  ciphertextsize=36*256 + 36*NumberOfExtraPatterns;
+  CipherTextLength = 36*256 + 36*NumberOfExtraPatterns;
 
   //We use a zero key and print the actual secret key-dependent SBox - You can put any other key here. 
-  UCHAR zerokey[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-  sss_key(&state, zerokey, 16);
-  //  for (i=0;i<256;i++) printf("%02x \t %04x\n",i,state.SBox[i]);
+  UCHAR ZeroKey[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+  sss_key(&State, ZeroKey, 16);
+  //  for (i=0;i<256;i++) printf("%02x \t %04x\n",i,State.SBox[i]);
   
-  // Now we choose our ciphertext
-  for (i=0;i<ciphertextsize;i++) 
-	  ciphertext[i]=0; 
+  // Now we choose our CipherText
+  for (i = 0; i < CipherTextLength; i++) 
+	  CipherText[i] = 0; 
 
-  for (i=0;i<256;i++)            
-	  ciphertext[36*i+26]=i;        // 255 modifications in LSB of r[13]
+  for (i = 0; i < 256; i++)            
+	  CipherText[36*i + 26] = i;        // 255 modifications in LSB of r[13]
 
   for (i = 0; i < NumberOfExtraPatterns; i++)         
-	  ciphertext[256*36+36*i+27] = i; // NumberOfExtraPatterns modifications in MSB of r[13]
+	  CipherText[256*36 + 36*i + 27] = i; // NumberOfExtraPatterns modifications in MSB of r[13]
 
-  // And obtain the corresponding plaintext
-  for (i=0; i < ciphertextsize; i++) 
-	  plaintext[i] = ciphertext[i];
+  // And obtain the corresponding PlainText
+  for (i = 0; i < CipherTextLength; i++) 
+	  PlainText[i] = CipherText[i];
 
-  sss_deconly(&state, plaintext, ciphertextsize);
+  sss_deconly(&State, PlainText, CipherTextLength);
 
-  for (ctr_aL=0; ctr_aL < 256; ctr_aL++)
+  for (ctr_aL = 0; ctr_aL < 256; ctr_aL++)
   {
     //for (ctr_aL=0x11;ctr_aL<0x12;ctr_aL++){
-    aL=ctr_aL;    
+    aL = ctr_aL;    
     // determine a_H
-    aH=0;
+    aH = 0;
     //for (i=0;i<256;i++){ // try all possible aH
-    for (i=0;i<256;i++)
+    for (i = 0; i < 256; i++)
 	{ // try all possible aH
-      aHg1=i;
-      correct=1;
-      for (j=0;j<NumberOfExtraPatterns;j++)
+      aHg1 = i;
+      correct = 1;
+      for (j = 0; j < NumberOfExtraPatterns; j++)
 	  {
-		aHg2=aHg1+j;
-		if ( (plaintext[34]^plaintext[256*36+36*j+34]) != (aHg1^aHg2) ) 
-			correct=0; //{correct=0; printf("probleem\n");} else printf("geen probleem!\n");
+		aHg2 = aHg1 + j;
+		if ( (PlainText[34]^PlainText[256*36 + 36*j + 34]) != (aHg1^aHg2) ) 
+			correct = 0; //{correct=0; printf("probleem\n");} else printf("geen probleem!\n");
       }
       if (correct)
-		  aH=aHg1; //{aH=aHg1; printf("%02x\n",aH);}
+		  aH = aHg1; //{aH=aHg1; printf("%02x\n",aH);}
     }
     a = (aH<<8)^aL;
-    rotateda=(aL<<8)^aH;
-    for (ctr_SaL=0;ctr_SaL<65536;ctr_SaL++)
+    Rotated_a = (aL<<8)^aH;
+    for (ctr_SaL = 0; ctr_SaL < 65536; ctr_SaL++)
 	{
       //for (ctr_SaL=0x4cd9;ctr_SaL<0x4cda;ctr_SaL++){
       // Set the guess back on the beginning values
-      for (i=0;i<256;i++) 
-		  stateguess.SBox[i]=0;
+      for (i = 0; i < 256; i++) 
+		  StateGuess.SBox[i] = 0;
 
-      stateguess.SBox[aL]=ctr_SaL;
+      StateGuess.SBox[aL] = ctr_SaL;
 
       // determine the entire SBox
-      for (i=1;i<256;i++)
+      for (i = 1; i < 256; i++)
 	  {
-		aplusi=a+i; 
-		rotatedaplusi = ((aplusi&0xff)<<8) ^ ((aplusi&0xff00)>>8);
-		//printf("aplusi %04x\t rotated %04x\n",aplusi,rotatedaplusi);
-		SBoxinput=(aL+i); //printf("%d\n",SBoxinput);
-		stateguess.SBox[SBoxinput]=(plaintext[35]<<8)^plaintext[34]^(plaintext[36*i+35]<<8)^plaintext[36*i+34]^stateguess.SBox[aL]^rotateda^rotatedaplusi;
+		a_plus_i = a+i; 
+		Rotated_a_plus_i = ( (a_plus_i & 0xff) << 8) ^ ( (a_plus_i & 0xff00) >> 8);
+		//printf("a_plus_i %04x\t rotated %04x\n",a_plus_i,Rotated_a_plus_i);
+		SboxInput = (aL + i); //printf("%d\n",SboxInput);
+		StateGuess.SBox[SboxInput] = (PlainText[35]<<8)^PlainText[34]^(PlainText[36*i+35]<<8)^PlainText[36*i+34]^StateGuess.SBox[aL]^Rotated_a^Rotated_a_plus_i;
       }      
-      //for (i=1;i<256;i++) printf("%02x\t Actual: %04x \t Guess: %04x\n",i,state.SBox[i],stateguess.SBox[i]);      
+      //for (i=1;i<256;i++) printf("%02x\t Actual: %04x \t Guess: %04x\n",i,State.SBox[i],StateGuess.SBox[i]);      
       // Print the solution if it's the correct one:
-      everythingcorrect=1;
+      EverythingCorrect = 1;
 
       for (i=0;i<256;i++)
 	  {
-		if (state.SBox[i]!=stateguess.SBox[i])
+		if (State.SBox[i] != StateGuess.SBox[i])
 			{
-				everythingcorrect=0; 		
-				i=256;
+				EverythingCorrect = 0; 		
+				i = 256;
 			}
 	  }
       
-	  if (everythingcorrect)
+	  if (EverythingCorrect)
 	  {
 		printf("The key has been recovered entirely!\n"); 
-		for (i=0;i<256;i++) 
-			std::cout<<i<<" "<<state.SBox[i]<<" "<<stateguess.SBox[i]<<std::endl;
-			//printf("%02x\t Actual: %04d \t Guess: %04d\n",i,state.SBox[i],stateguess.SBox[i]);
-
-		ctr_aL=256; ctr_SaL=65536; // we end here // - we now don't do it to estimate the time...
+		for (i = 0; i < 256; i++) 
+			std::cout<<i<<"\t"<<State.SBox[i]<<"\t"<<StateGuess.SBox[i]<<std::endl;
+			//printf("%02x\t Actual: %04d \t Guess: %04d\n",i,State.SBox[i],StateGuess.SBox[i]);
+		ctr_aL = 256; 
+		ctr_SaL = 65536; // we end here // - we now don't do it to estimate the time...
       }
 
     }
