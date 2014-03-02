@@ -532,7 +532,7 @@ int _tmain(int argc, _TCHAR* argv[])
   
   // Now we choose our CipherText
   for (i = 0; i < CipherTextLength; i++) 
-	  CipherText[i] = 0; 
+	  CipherText[i] = 0; // all values init to 0
 
   for (i = 0; i < 256; i++)            
 	  CipherText[36*i + 26] = i;        // 255 modifications in LSB of r[13]
