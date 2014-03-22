@@ -32,35 +32,36 @@ namespace HBB_Sharp
             0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
         };
 
-        public static void NLSub(NLC NLC0, NLC NLC1, NLC NLC2, NLC NLC3)
+        public static void NLSub(ref NLC NLC0, ref NLC NLC1, ref NLC NLC2, ref NLC NLC3)
         {
-            NLC0.bytes.byte0 = byteSub[NLC0.bytes.byte0];
-            NLC0.bytes.byte1 = byteSub[NLC0.bytes.byte1];
-            NLC0.bytes.byte2 = byteSub[NLC0.bytes.byte2];
-            NLC0.bytes.byte3 = byteSub[NLC0.bytes.byte3];
-            NLC1.bytes.byte0 = byteSub[NLC1.bytes.byte0];
-            NLC1.bytes.byte1 = byteSub[NLC1.bytes.byte1];
-            NLC1.bytes.byte2 = byteSub[NLC1.bytes.byte2];
-            NLC1.bytes.byte3 = byteSub[NLC1.bytes.byte3];
-            NLC2.bytes.byte0 = byteSub[NLC2.bytes.byte0];
-            NLC2.bytes.byte1 = byteSub[NLC2.bytes.byte1];
-            NLC2.bytes.byte2 = byteSub[NLC2.bytes.byte2];
-            NLC2.bytes.byte3 = byteSub[NLC2.bytes.byte3];
-            NLC3.bytes.byte0 = byteSub[NLC3.bytes.byte0];
-            NLC3.bytes.byte1 = byteSub[NLC3.bytes.byte1];
-            NLC3.bytes.byte2 = byteSub[NLC3.bytes.byte2];
-            NLC3.bytes.byte3 = byteSub[NLC3.bytes.byte3];
+            NLC0.byte0 = byteSub[NLC0.byte0];
+            NLC0.byte1 = byteSub[NLC0.byte1];
+            NLC0.byte2 = byteSub[NLC0.byte2];
+            NLC0.byte3 = byteSub[NLC0.byte3];
+            NLC1.byte0 = byteSub[NLC1.byte0];
+            NLC1.byte1 = byteSub[NLC1.byte1];
+            NLC1.byte2 = byteSub[NLC1.byte2];
+            NLC1.byte3 = byteSub[NLC1.byte3];
+            NLC2.byte0 = byteSub[NLC2.byte0];
+            NLC2.byte1 = byteSub[NLC2.byte1];
+            NLC2.byte2 = byteSub[NLC2.byte2];
+            NLC2.byte3 = byteSub[NLC2.byte3];
+            NLC3.byte0 = byteSub[NLC3.byte0];
+            NLC3.byte1 = byteSub[NLC3.byte1];
+            NLC3.byte2 = byteSub[NLC3.byte2];
+            NLC3.byte3 = byteSub[NLC3.byte3];
         }
 
         public static UInt32 CLShift(UInt32 A, int I)
         {
-            return (((A) >> (32 - I)) ^ ((A) << (I)));
+            UInt32 result = (((A) >> (32 - I)) ^ ((A) << (I)));
+            return result;
         }
 
-        public static void Fold(UInt32[] Key, NLC NLC0, NLC NLC1, NLC NLC2, NLC NLC3)
+        public static void Fold(ref NLC NLC0, ref NLC NLC1, ref NLC NLC2, ref NLC NLC3)
         {
-            UInt32 tmp0 = Key[0] ^ Key[2];
-            UInt32 tmp1 = Key[1] ^ Key[3];
+            UInt32 tmp0 = Program.KEY[0] ^ Program.KEY[2];
+            UInt32 tmp1 = Program.KEY[1] ^ Program.KEY[3];
             NLC0.word = tmp0;
             NLC1.word = tmp1;
             NLC2.word = ~tmp0;
@@ -110,16 +111,16 @@ namespace HBB_Sharp
             arr3 = tmp0 ^ tmp2;
         }
 
-        public static void Round(CA FirstCA, CA SecondCA, NLC NLC0, NLC NLC1, NLC NLC2, NLC NLC3)
+        public static void Round(CA FirstCA, CA SecondCA, ref NLC NLC0, ref NLC NLC1, ref NLC NLC2, ref NLC NLC3)
 	    {
-	        NLSub(NLC0, NLC1, NLC2, NLC3);
+            NLSub(ref NLC0, ref NLC1, ref NLC2, ref NLC3);
 	        UInt32 tmp0 = NLC0.word ^ NLC1.word ^ NLC2.word ^ NLC3.word;
 	        NLC0.word = CLShift(tmp0^NLC0.word,4);
 	        NLC1.word = CLShift(tmp0^NLC1.word,12);
 	        NLC2.word = CLShift(tmp0^NLC2.word,20);
 	        NLC3.word = CLShift(tmp0^NLC3.word,28);
 	        transpose32(ref NLC0.word,ref NLC1.word, ref NLC2.word, ref NLC3.word);
-	        NLSub(NLC0, NLC1, NLC2, NLC3);
+            NLSub(ref NLC0, ref NLC1, ref NLC2, ref NLC3);
             FirstCA.EvolveCA256();
             SecondCA.EvolveCA256();
             Program.KeyStream[0] = NLC0.word ^ FirstCA.state0;
@@ -132,17 +133,17 @@ namespace HBB_Sharp
             NLC3.word = NLC3.word ^ SecondCA.state4;
 	    }
 
-        public static void KeySetup(CA FirstCA, CA SecondCA, NLC NLC0, NLC NLC1, NLC NLC2, NLC NLC3)
+        public static void KeySetup(CA FirstCA, CA SecondCA, ref NLC NLC0, ref NLC NLC1, ref NLC NLC2, ref NLC NLC3)
         {
             UInt32[,] Temp = new UInt32[4, 4];
             Temp[0,0] = Program.KeyStream[0]; Temp[0,1] = Program.KeyStream[1]; Temp[0,2] = Program.KeyStream[2]; Temp[0,3] = Program.KeyStream[3];
-	        Round(FirstCA, SecondCA, NLC0, NLC1, NLC2, NLC3);
+            Round(FirstCA, SecondCA, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
             Temp[1, 0] = Program.KeyStream[0]; Temp[1, 1] = Program.KeyStream[1]; Temp[1, 2] = Program.KeyStream[2]; Temp[1, 3] = Program.KeyStream[3];
-	        Round(FirstCA, SecondCA, NLC0, NLC1, NLC2, NLC3);
+            Round(FirstCA, SecondCA, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
             Temp[2, 0] = Program.KeyStream[0]; Temp[2, 1] = Program.KeyStream[1]; Temp[2, 2] = Program.KeyStream[2]; Temp[2, 3] = Program.KeyStream[3];
-            Round(FirstCA, SecondCA, NLC0, NLC1, NLC2, NLC3);
+            Round(FirstCA, SecondCA, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
             Temp[3, 0] = Program.KeyStream[0]; Temp[3, 1] = Program.KeyStream[1]; Temp[3, 2] = Program.KeyStream[2]; Temp[3, 3] = Program.KeyStream[3];
-            Round(FirstCA, SecondCA, NLC0, NLC1, NLC2, NLC3);
+            Round(FirstCA, SecondCA, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
 
             FirstCA.state0 = FirstCA.state0 ^ Temp[3, 0]; 
             FirstCA.state1 = FirstCA.state1 ^ Temp[3, 1];
@@ -162,11 +163,11 @@ namespace HBB_Sharp
             SecondCA.state7 = SecondCA.state7 ^ Temp[0, 3];
         }
 
-        public static void Encrypt(CA FirstCA, CA SecondCA, NLC NLC0, NLC NLC1, NLC NLC2, NLC NLC3, ref UInt32[] M, ref UInt32[] C) 
+        public static void Encrypt(CA FirstCA, CA SecondCA, ref NLC NLC0, ref NLC NLC1, ref NLC NLC2, ref NLC NLC3, ref UInt32[] M, ref UInt32[] C) 
         {
             for (int i=0; i<1; i++)
 	        {
-                Round(FirstCA, SecondCA, NLC0, NLC1, NLC2, NLC3);
+                Round(FirstCA, SecondCA, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
 		        // encryption
                 C[0] = M[0] ^ Program.KeyStream[0];
                 C[1] = M[1] ^ Program.KeyStream[1];

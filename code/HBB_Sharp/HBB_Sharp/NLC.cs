@@ -3,20 +3,26 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 namespace HBB_Sharp
 {
-    public class NLC
+    [StructLayoutAttribute(LayoutKind.Explicit)]
+    public struct NLC
     {
+        [FieldOffsetAttribute(0)]
         public UInt32 word;
-        public Bytes bytes = new Bytes();        
-    }    
-
-    public class Bytes 
-    {
+        
+        [FieldOffsetAttribute(0)]
         public byte byte0;
+
+        [FieldOffsetAttribute(1)]
         public byte byte1;
+
+        [FieldOffsetAttribute(2)]
         public byte byte2;
+
+        [FieldOffsetAttribute(3)]
         public byte byte3;
     }
 }

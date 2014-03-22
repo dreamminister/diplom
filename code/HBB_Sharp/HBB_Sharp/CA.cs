@@ -55,29 +55,29 @@ namespace HBB_Sharp
             state7 = 0;
         }
 
-        public void Exp(UInt32[] Key)
+        public void Exp()
         {
             if (this.order == CAorder.first)
             {
-                state0 = Key[0];
-                state1 = Key[1];
-                state2 = Key[2];
-                state3 = Key[3];
-                state4 = ~Key[0];
-                state5 = ~Key[1];
-                state6 = ~Key[2];
-                state7 = ~Key[3];
+                state0 = Program.KEY[0];
+                state1 = Program.KEY[1];
+                state2 = Program.KEY[2];
+                state3 = Program.KEY[3];
+                state4 = ~Program.KEY[0];
+                state5 = ~Program.KEY[1];
+                state6 = ~Program.KEY[2];
+                state7 = ~Program.KEY[3];
             }
             else
             {
-                state0 = ~Key[0];
-                state1 = ~Key[1];
-                state2 = ~Key[2];
-                state3 = ~Key[3];
-                state4 = Key[0];
-                state5 = Key[1];
-                state6 = Key[2];
-                state7 = Key[3];
+                state0 = ~Program.KEY[0];
+                state1 = ~Program.KEY[1];
+                state2 = ~Program.KEY[2];
+                state3 = ~Program.KEY[3];
+                state4 = Program.KEY[0];
+                state5 = Program.KEY[1];
+                state6 = Program.KEY[2];
+                state7 = Program.KEY[3];
             }
         }
 
