@@ -5,7 +5,7 @@
 #include <string.h>
 #include <time.h>
 #include <cstdlib>
-
+#include <iostream>
 /*  Constatns START*/
 #define RULE00 0x80ffaf46
 #define RULE01 0x977969e9
@@ -179,20 +179,21 @@ int _tmain(int argc, char* argv[])
 	register unsigned long KEYSTREAM0, KEYSTREAM1, KEYSTREAM2, KEYSTREAM3;
 	register unsigned long tmp0=0, tmp1=0, tmp2=0, tmp3=0, tmp4=0, tmp5=0, tmp6=0, tmp7=0;
 	unsigned long T[4][4], C[4], M[4];
+	M[0] = 1; M[1] = 2; M[2] = 3;  M[3] = 4;
 	int i;
 	clock_t t1,t2;
 	FILE *fp;
-
+	unsigned long NotM = ~tmp0;
 	if (argc < 3)
 	{
 		printf("Usage: %s <# of key blocks> <key file name>\n", argv[0]); 
 		exit(0);
 	}
 
-	KBLK = atol(argv[1]);
+	KBLK = 1;
 	printf("KBLK = %ld\n", KBLK);
 
-	fp = fopen(argv[2],"r");
+	fp = fopen("C:\\Users\\Irochka\\Desktop\\diplom\\code\\HBB\\Debug\\key.txt","r");
 	if (fp == NULL) 
 	{
 		printf("Cannot open %s\n", argv[2]); 
@@ -211,8 +212,18 @@ int _tmain(int argc, char* argv[])
 	KEYSTREAM0 = KEYSTREAM1 = KEYSTREAM2 = KEYSTREAM3 = 0;
 
 	// start of key setup
+	
 	EXP FOLD
-	for (i=0; i<=12; i++) Round
+	std::cout<<"FOLD"<<std::endl;
+	std::cout<<(int)(NLC0.bytes.byte0)<<" ";
+
+	for (i=0; i<=12; i++) 
+	{
+		std::cout<<i<<std::endl;
+		Round
+		std::cout<<(int)(NLC0.bytes.byte0)<<" ";
+		std::cout<<(KEYSTREAM0)<<" ";
+	}
 
 	T[0][0] = KEYSTREAM0; T[0][1] = KEYSTREAM1; T[0][2] = KEYSTREAM2; T[0][3] = KEYSTREAM3;
 	Round
@@ -244,13 +255,17 @@ int _tmain(int argc, char* argv[])
 		C[1] = M[1] ^ KEYSTREAM1;
 		C[2] = M[2] ^ KEYSTREAM2;
 		C[3] = M[3] ^ KEYSTREAM3;
+		//M[0] = 1895341010 ^ KEYSTREAM0;
+		//M[1] = 523092792 ^ KEYSTREAM1;
+		//M[2] = 1460279385 ^ KEYSTREAM2;
+		//M[3] = 3596106496 ^ KEYSTREAM3;
 	} // end of key generation
 
 	t2 = clock();
 
-	printf("CLK_TCK = %d, CLOCKS_PER_SEC = %d\n", CLK_TCK, CLOCKS_PER_SEC);
-	printf("clocks elapsed = %d, time elaplsed = %f\n",t2-t1,(float)(t2-t1)/(float)CLOCKS_PER_SEC);
-
+	//printf("CLK_TCK = %d, CLOCKS_PER_SEC = %d\n", CLK_TCK, CLOCKS_PER_SEC);
+	//printf("clocks elapsed = %d, time elaplsed = %f\n",t2-t1,(float)(t2-t1)/(float)CLOCKS_PER_SEC);
+	std::cout<<C[0]<<" "<<C[1]<<" "<<C[2]<<" "<<C[3]<<std::endl;
 	return 0;
 }
 
