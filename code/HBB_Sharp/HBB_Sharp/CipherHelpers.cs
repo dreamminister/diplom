@@ -168,19 +168,13 @@ namespace HBB_Sharp
             for (int i=0; i<1; i++)
 	        {
                 Round(FirstCA, SecondCA, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
+
 		        // encryption
                 C[0] = M[0] ^ Program.KeyStream[0];
                 C[1] = M[1] ^ Program.KeyStream[1];
                 C[2] = M[2] ^ Program.KeyStream[2];
                 C[3] = M[3] ^ Program.KeyStream[3];
-                //M[0] = 3999768960 ^ Program.KeyStream[0];
-                //M[1] = 2073165091 ^ Program.KeyStream[1];
-                //M[2] = 1608909081 ^ Program.KeyStream[2];
-                //M[3] = 979402394 ^ Program.KeyStream[3];
-                //M[0] = 1895341010 ^ KEYSTREAM0;
-                //M[1] = 523092792 ^ KEYSTREAM1;
-                //M[2] = 1460279385 ^ KEYSTREAM2;
-                //M[3] = 3596106496 ^ KEYSTREAM3;
+
 	        } // end of key generation
         }
 
@@ -195,6 +189,37 @@ namespace HBB_Sharp
                 M[2] = C[2] ^ Program.KeyStream[2];
                 M[3] = C[3] ^ Program.KeyStream[3];
             } // end of key generation
+        }
+
+        public enum Action 
+        {
+            Encrypt = 1,
+            Decrypt = 2
+        }
+
+        public static void HBB(Action action) 
+        {
+            NLC NLC0 = new NLC(); NLC NLC1 = new NLC(); NLC NLC2 = new NLC(); NLC NLC3 = new NLC();
+            CA FirstCa = new CA(CAorder.first);
+            CA SecondCa = new CA(CAorder.second);
+            //UInt32[,] T = new UInt32[4, 4];
+
+            //int NumberOfKeyBlocks = 1;
+            FirstCa.Exp();
+            SecondCa.Exp();
+            CipherHelpers.Fold(ref NLC0, ref NLC1, ref NLC2, ref NLC3);
+
+            for (int i = 0; i <= 12; i++)
+            {
+                CipherHelpers.Round(FirstCa, SecondCa, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
+            }
+
+            CipherHelpers.KeySetup(FirstCa, SecondCa, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
+
+            if (action == Action.Encrypt)
+                CipherHelpers.Encrypt(FirstCa, SecondCa, ref NLC0, ref NLC1, ref NLC2, ref NLC3, ref Program.M, ref Program.C);
+            else if (action == Action.Decrypt)
+                CipherHelpers.Decrypt(FirstCa, SecondCa, ref NLC0, ref NLC1, ref NLC2, ref NLC3, ref Program.M, ref Program.C);
         }
     }
 }
