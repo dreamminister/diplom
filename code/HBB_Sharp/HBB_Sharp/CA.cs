@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
+
 
 namespace HBB_Sharp
 {
@@ -12,9 +14,9 @@ namespace HBB_Sharp
         second = 2
     }
 
+    
     public class CA
-    {        
-        public CAorder order;
+    {
         public UInt32 state0;
         public UInt32 state1;
         public UInt32 state2;
@@ -42,9 +44,8 @@ namespace HBB_Sharp
         UInt32 RULE16 = 0xc1d1a85f;
         UInt32 RULE17 = 0x57b8919b;
 
-        public CA(CAorder InOrder) 
+        public CA(CAorder InOrder)
         {
-            order = InOrder;
             state0 = 0;
             state1 = 0;
             state2 = 0;
@@ -55,9 +56,9 @@ namespace HBB_Sharp
             state7 = 0;
         }
 
-        public void Exp()
+        public void Exp(CAorder order)
         {
-            if (this.order == CAorder.first)
+            if (order == CAorder.first)
             {
                 state0 = Program.KEY[0];
                 state1 = Program.KEY[1];
@@ -79,36 +80,46 @@ namespace HBB_Sharp
                 state6 = Program.KEY[2];
                 state7 = Program.KEY[3];
             }
+
+
         }
 
-    public void EvolveCA256()
-	{
-        if (this.order == CAorder.first)
+        public void MergeWithCipher(UInt32 C0, UInt32 C1, UInt32 C2, UInt32 C3) 
         {
-            UInt32 tmp0 = ((state0 << 1) ^ (state1 >> 31)) ^ (RULE00 & state0) ^ (state0 >> 1);
-            UInt32 tmp1 = ((state1 << 1) ^ (state2 >> 31)) ^ (RULE01 & state1) ^ ((state1 >> 1) ^ (state0 << 31));
-            UInt32 tmp2 = ((state2 << 1) ^ (state3 >> 31)) ^ (RULE02 & state2) ^ ((state2 >> 1) ^ (state1 << 31));
-            UInt32 tmp3 = ((state3 << 1) ^ (state4 >> 31)) ^ (RULE03 & state3) ^ ((state3 >> 1) ^ (state2 << 31));
-            UInt32 tmp4 = ((state4 << 1) ^ (state5 >> 31)) ^ (RULE04 & state4) ^ ((state4 >> 1) ^ (state3 << 31));
-            UInt32 tmp5 = ((state5 << 1) ^ (state6 >> 31)) ^ (RULE05 & state5) ^ ((state5 >> 1) ^ (state4 << 31));
-            UInt32 tmp6 = ((state6 << 1) ^ (state7 >> 31)) ^ (RULE06 & state6) ^ ((state6 >> 1) ^ (state5 << 31));
-            UInt32 tmp7 = (state7 << 1) ^ (RULE07 & state7) ^ ((state7 >> 1) ^ (state6 << 31));
-            state0 = tmp0; state1 = tmp1; state2 = tmp2; state3 = tmp3;
-            state4 = tmp4; state5 = tmp5; state6 = tmp6; state7 = tmp7;
+            state7 = state7 ^ C3;
+            state5 = state5 ^ C2;
+            state3 = state3 ^ C1;
+            state1 = state1 ^ C0;
         }
-        else
+
+        public void EvolveCA256(CAorder order)
         {
-            UInt32 tmp0 = ((state0 << 1) ^ (state1 >> 31)) ^ (RULE10 & state0) ^ (state0 >> 1);
-            UInt32 tmp1 = ((state1 << 1) ^ (state2 >> 31)) ^ (RULE11 & state1) ^ ((state1 >> 1) ^ (state0 << 31));
-            UInt32 tmp2 = ((state2 << 1) ^ (state3 >> 31)) ^ (RULE12 & state2) ^ ((state2 >> 1) ^ (state1 << 31));
-            UInt32 tmp3 = ((state3 << 1) ^ (state4 >> 31)) ^ (RULE13 & state3) ^ ((state3 >> 1) ^ (state2 << 31));
-            UInt32 tmp4 = ((state4 << 1) ^ (state5 >> 31)) ^ (RULE14 & state4) ^ ((state4 >> 1) ^ (state3 << 31));
-            UInt32 tmp5 = ((state5 << 1) ^ (state6 >> 31)) ^ (RULE15 & state5) ^ ((state5 >> 1) ^ (state4 << 31));
-            UInt32 tmp6 = ((state6 << 1) ^ (state7 >> 31)) ^ (RULE16 & state6) ^ ((state6 >> 1) ^ (state5 << 31));
-            UInt32 tmp7 = (state7 << 1) ^ (RULE17 & state7) ^ ((state7 >> 1) ^ (state6 << 31));
-            state0 = tmp0; state1 = tmp1; state2 = tmp2; state3 = tmp3;
-            state4 = tmp4; state5 = tmp5; state6 = tmp6; state7 = tmp7;
+            if (order == CAorder.first)
+            {
+                UInt32 tmp0 = ((state0 << 1) ^ (state1 >> 31)) ^ (RULE00 & state0) ^ (state0 >> 1);
+                UInt32 tmp1 = ((state1 << 1) ^ (state2 >> 31)) ^ (RULE01 & state1) ^ ((state1 >> 1) ^ (state0 << 31));
+                UInt32 tmp2 = ((state2 << 1) ^ (state3 >> 31)) ^ (RULE02 & state2) ^ ((state2 >> 1) ^ (state1 << 31));
+                UInt32 tmp3 = ((state3 << 1) ^ (state4 >> 31)) ^ (RULE03 & state3) ^ ((state3 >> 1) ^ (state2 << 31));
+                UInt32 tmp4 = ((state4 << 1) ^ (state5 >> 31)) ^ (RULE04 & state4) ^ ((state4 >> 1) ^ (state3 << 31));
+                UInt32 tmp5 = ((state5 << 1) ^ (state6 >> 31)) ^ (RULE05 & state5) ^ ((state5 >> 1) ^ (state4 << 31));
+                UInt32 tmp6 = ((state6 << 1) ^ (state7 >> 31)) ^ (RULE06 & state6) ^ ((state6 >> 1) ^ (state5 << 31));
+                UInt32 tmp7 = (state7 << 1) ^ (RULE07 & state7) ^ ((state7 >> 1) ^ (state6 << 31));
+                state0 = tmp0; state1 = tmp1; state2 = tmp2; state3 = tmp3;
+                state4 = tmp4; state5 = tmp5; state6 = tmp6; state7 = tmp7;
+            }
+            else
+            {
+                UInt32 tmp0 = ((state0 << 1) ^ (state1 >> 31)) ^ (RULE10 & state0) ^ (state0 >> 1);
+                UInt32 tmp1 = ((state1 << 1) ^ (state2 >> 31)) ^ (RULE11 & state1) ^ ((state1 >> 1) ^ (state0 << 31));
+                UInt32 tmp2 = ((state2 << 1) ^ (state3 >> 31)) ^ (RULE12 & state2) ^ ((state2 >> 1) ^ (state1 << 31));
+                UInt32 tmp3 = ((state3 << 1) ^ (state4 >> 31)) ^ (RULE13 & state3) ^ ((state3 >> 1) ^ (state2 << 31));
+                UInt32 tmp4 = ((state4 << 1) ^ (state5 >> 31)) ^ (RULE14 & state4) ^ ((state4 >> 1) ^ (state3 << 31));
+                UInt32 tmp5 = ((state5 << 1) ^ (state6 >> 31)) ^ (RULE15 & state5) ^ ((state5 >> 1) ^ (state4 << 31));
+                UInt32 tmp6 = ((state6 << 1) ^ (state7 >> 31)) ^ (RULE16 & state6) ^ ((state6 >> 1) ^ (state5 << 31));
+                UInt32 tmp7 = (state7 << 1) ^ (RULE17 & state7) ^ ((state7 >> 1) ^ (state6 << 31));
+                state0 = tmp0; state1 = tmp1; state2 = tmp2; state3 = tmp3;
+                state4 = tmp4; state5 = tmp5; state6 = tmp6; state7 = tmp7;
+            }
         }
-	}
     }
 }
