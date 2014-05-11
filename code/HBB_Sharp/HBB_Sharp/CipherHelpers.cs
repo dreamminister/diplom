@@ -165,29 +165,34 @@ namespace HBB_Sharp
 
         public static void Encrypt(CA FirstCA, CA SecondCA, ref NLC NLC0, ref NLC NLC1, ref NLC NLC2, ref NLC NLC3, ref UInt32[] M, ref UInt32[] C) 
         {
-            for (int i=0; i<1; i++)
+            int BlockNumber = M.Length / 4;
+
+            for (int i = 0; i < BlockNumber; i++)
 	        {
                 Round(FirstCA, SecondCA, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
-
+                int index = 4 * i;
 		        // encryption
-                C[0] = M[0] ^ Program.KeyStream[0];
-                C[1] = M[1] ^ Program.KeyStream[1];
-                C[2] = M[2] ^ Program.KeyStream[2];
-                C[3] = M[3] ^ Program.KeyStream[3];
+                C[0 + index] = M[0 + index] ^ Program.KeyStream[0];
+                C[1 + index] = M[1 + index] ^ Program.KeyStream[1];
+                C[2 + index] = M[2 + index] ^ Program.KeyStream[2];
+                C[3 + index] = M[3 + index] ^ Program.KeyStream[3];
 
 	        } // end of key generation
         }
 
         public static void Decrypt(CA FirstCA, CA SecondCA, ref NLC NLC0, ref NLC NLC1, ref NLC NLC2, ref NLC NLC3, ref UInt32[] M, ref UInt32[] C) 
         {
-            for (int i = 0; i < 1; i++)
+            int BlockNumber = M.Length / 4;
+
+            for (int i = 0; i < BlockNumber; i++)
             {
                 Round(FirstCA, SecondCA, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
+                int index = 4 * i;
                 // decryption
-                M[0] = C[0] ^ Program.KeyStream[0];
-                M[1] = C[1] ^ Program.KeyStream[1];
-                M[2] = C[2] ^ Program.KeyStream[2];
-                M[3] = C[3] ^ Program.KeyStream[3];
+                M[0 + index] = C[0 + index] ^ Program.KeyStream[0];
+                M[1 + index] = C[1 + index] ^ Program.KeyStream[1];
+                M[2 + index] = C[2 + index] ^ Program.KeyStream[2];
+                M[3 + index] = C[3 + index] ^ Program.KeyStream[3];
             } // end of key generation
         }
 
@@ -202,9 +207,7 @@ namespace HBB_Sharp
             NLC NLC0 = new NLC(); NLC NLC1 = new NLC(); NLC NLC2 = new NLC(); NLC NLC3 = new NLC();
             CA FirstCa = new CA(CAorder.first);
             CA SecondCa = new CA(CAorder.second);
-            //UInt32[,] T = new UInt32[4, 4];
 
-            //int NumberOfKeyBlocks = 1;
             FirstCa.Exp();
             SecondCa.Exp();
             CipherHelpers.Fold(ref NLC0, ref NLC1, ref NLC2, ref NLC3);
