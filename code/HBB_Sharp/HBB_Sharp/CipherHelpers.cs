@@ -121,8 +121,8 @@ namespace HBB_Sharp
 	        NLC3.word = CLShift(tmp0^NLC3.word,28);
 	        transpose32(ref NLC0.word,ref NLC1.word, ref NLC2.word, ref NLC3.word);
             NLSub(ref NLC0, ref NLC1, ref NLC2, ref NLC3);
-            FirstCA.EvolveCA256();
-            SecondCA.EvolveCA256();
+            FirstCA.EvolveCA256(CAorder.first);
+            SecondCA.EvolveCA256(CAorder.second);
             Program.KeyStream[0] = NLC0.word ^ FirstCA.state0;
             Program.KeyStream[1] = NLC1.word ^ FirstCA.state7;
             Program.KeyStream[2] = NLC2.word ^ SecondCA.state0;
@@ -166,7 +166,7 @@ namespace HBB_Sharp
         public static void Encrypt(CA FirstCA, CA SecondCA, ref NLC NLC0, ref NLC NLC1, ref NLC NLC2, ref NLC NLC3, ref UInt32[] M, ref UInt32[] C) 
         {
             int BlockNumber = M.Length / 4;
-
+            C[12] = 0; C[13] = 0; C[14] = 0;
             for (int i = 0; i < BlockNumber; i++)
 	        {
                 Round(FirstCA, SecondCA, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
@@ -177,13 +177,35 @@ namespace HBB_Sharp
                 C[2 + index] = M[2 + index] ^ Program.KeyStream[2];
                 C[3 + index] = M[3 + index] ^ Program.KeyStream[3];
 
+                //FirstCA.Exp(CAorder.first);
+                //SecondCA.Exp(CAorder.second);
+                //if (i == 0)
+                //{
+                //    FirstCA.MergeWithCipher(C[index], C[12], C[13], C[14]);
+                //    SecondCA.MergeWithCipher(C[index], C[12], C[13], C[14]);
+                //    CipherHelpers.Fold(ref NLC0, ref NLC1, ref NLC2, ref NLC3);
+                //    NLC0.word = NLC0.word ^ C[index] ^ C[12] ^ C[13] ^ C[14];
+                //    NLC1.word = NLC1.word ^ C[index] ^ C[12] ^ C[13] ^ C[14];
+                //    NLC2.word = NLC2.word ^ C[index] ^ C[12] ^ C[13] ^ C[14];
+                //    NLC3.word = NLC3.word ^ C[index] ^ C[12] ^ C[13] ^ C[14];
+                //}
+                //else
+                //{
+                //    FirstCA.MergeWithCipher(C[index], C[index - 1], C[index - 2], C[index - 3]);
+                //    SecondCA.MergeWithCipher(C[index], C[index - 1], C[index - 2], C[index - 3]);
+                //    CipherHelpers.Fold(ref NLC0, ref NLC1, ref NLC2, ref NLC3);
+                //    NLC0.word = NLC0.word ^ C[index] ^ C[index - 1] ^ C[index - 2] ^ C[index - 3];
+                //    NLC1.word = NLC1.word ^ C[index] ^ C[index - 1] ^ C[index - 2] ^ C[index - 3];
+                //    NLC2.word = NLC2.word ^ C[index] ^ C[index - 1] ^ C[index - 2] ^ C[index - 3];
+                //    NLC3.word = NLC3.word ^ C[index] ^ C[index - 1] ^ C[index - 2] ^ C[index - 3];
+                //}
 	        } // end of key generation
         }
 
         public static void Decrypt(CA FirstCA, CA SecondCA, ref NLC NLC0, ref NLC NLC1, ref NLC NLC2, ref NLC NLC3, ref UInt32[] M, ref UInt32[] C) 
         {
             int BlockNumber = M.Length / 4;
-
+            C[12] = 0; C[13] = 0; C[14] = 0;
             for (int i = 0; i < BlockNumber; i++)
             {
                 Round(FirstCA, SecondCA, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
@@ -193,6 +215,29 @@ namespace HBB_Sharp
                 M[1 + index] = C[1 + index] ^ Program.KeyStream[1];
                 M[2 + index] = C[2 + index] ^ Program.KeyStream[2];
                 M[3 + index] = C[3 + index] ^ Program.KeyStream[3];
+
+                //FirstCA.Exp(CAorder.first);
+                //SecondCA.Exp(CAorder.second);
+                //if (i == 0)
+                //{
+                //    FirstCA.MergeWithCipher(C[index], C[12], C[13], C[14]);
+                //    SecondCA.MergeWithCipher(C[index], C[12], C[13], C[14]);
+                //    CipherHelpers.Fold(ref NLC0, ref NLC1, ref NLC2, ref NLC3);
+                //    NLC0.word = NLC0.word ^ C[index] ^ C[12] ^ C[13] ^ C[14];
+                //    NLC1.word = NLC1.word ^ C[index] ^ C[12] ^ C[13] ^ C[14];
+                //    NLC2.word = NLC2.word ^ C[index] ^ C[12] ^ C[13] ^ C[14];
+                //    NLC3.word = NLC3.word ^ C[index] ^ C[12] ^ C[13] ^ C[14];
+                //}
+                //else
+                //{
+                //    FirstCA.MergeWithCipher(C[index], C[index - 1], C[index - 2], C[index - 3]);
+                //    SecondCA.MergeWithCipher(C[index], C[index - 1], C[index - 2], C[index - 3]);
+                //    CipherHelpers.Fold(ref NLC0, ref NLC1, ref NLC2, ref NLC3);
+                //    NLC0.word = NLC0.word ^ C[index] ^ C[index - 1] ^ C[index - 2] ^ C[index - 3];
+                //    NLC1.word = NLC1.word ^ C[index] ^ C[index - 1] ^ C[index - 2] ^ C[index - 3];
+                //    NLC2.word = NLC2.word ^ C[index] ^ C[index - 1] ^ C[index - 2] ^ C[index - 3];
+                //    NLC3.word = NLC3.word ^ C[index] ^ C[index - 1] ^ C[index - 2] ^ C[index - 3];
+                //}
             } // end of key generation
         }
 
@@ -208,8 +253,8 @@ namespace HBB_Sharp
             CA FirstCa = new CA(CAorder.first);
             CA SecondCa = new CA(CAorder.second);
 
-            FirstCa.Exp();
-            SecondCa.Exp();
+            FirstCa.Exp(CAorder.first);
+            SecondCa.Exp(CAorder.second);
             CipherHelpers.Fold(ref NLC0, ref NLC1, ref NLC2, ref NLC3);
 
             for (int i = 0; i <= 12; i++)
