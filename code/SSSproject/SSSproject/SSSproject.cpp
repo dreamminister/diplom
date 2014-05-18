@@ -115,8 +115,7 @@ crccycle(sss_ctx *c, WORD w)
 void
 sss_key(sss_ctx *State, UCHAR Key[], int KeyLength)
 {
-    int	    i;
-
+    int i;
     if (KeyLength > MAXKEY)
 	abort();
     for (i = 0; i < 256; ++i)
