@@ -166,7 +166,7 @@ namespace HBB_Sharp
         public static void Encrypt(CA FirstCA, CA SecondCA, ref NLC NLC0, ref NLC NLC1, ref NLC NLC2, ref NLC NLC3, ref UInt32[] M, ref UInt32[] C) 
         {
             int BlockNumber = M.Length / 4;
-            C[12] = 0; C[13] = 0; C[14] = 0;
+            //C[12] = 0; C[13] = 0; C[14] = 0;
             for (int i = 0; i < BlockNumber; i++)
 	        {
                 Round(FirstCA, SecondCA, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
@@ -204,8 +204,8 @@ namespace HBB_Sharp
 
         public static void Decrypt(CA FirstCA, CA SecondCA, ref NLC NLC0, ref NLC NLC1, ref NLC NLC2, ref NLC NLC3, ref UInt32[] M, ref UInt32[] C) 
         {
-            int BlockNumber = M.Length / 4;
-            C[12] = 0; C[13] = 0; C[14] = 0;
+            int BlockNumber = C.Length / 4;
+            //C[12] = 0; C[13] = 0; C[14] = 0;
             for (int i = 0; i < BlockNumber; i++)
             {
                 Round(FirstCA, SecondCA, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
@@ -265,9 +265,19 @@ namespace HBB_Sharp
             CipherHelpers.KeySetup(FirstCa, SecondCa, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
 
             if (action == Action.Encrypt)
+            {
                 CipherHelpers.Encrypt(FirstCa, SecondCa, ref NLC0, ref NLC1, ref NLC2, ref NLC3, ref Program.M, ref Program.C);
+                // Place for SS mode
+                // 1. Exp()
+                // 2. LC[i] XOR C[i] || ... || C[i-3] => block
+                // 3. Fold()
+                // 4. NLC[i] XOR C[i] XOR ... XOR C[i-3]  => block
+            }
             else if (action == Action.Decrypt)
+            {
                 CipherHelpers.Decrypt(FirstCa, SecondCa, ref NLC0, ref NLC1, ref NLC2, ref NLC3, ref Program.M, ref Program.C);
+                // Place for SS mode
+            }
         }
     }
 }
