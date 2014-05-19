@@ -26,6 +26,8 @@ namespace HBB_Sharp
         public UInt32 state6;
         public UInt32 state7;
 
+        CAorder order;
+
         UInt32 RULE00 = 0x80ffaf46;
         UInt32 RULE01 = 0x977969e9;
         UInt32 RULE02 = 0x71553bb5;
@@ -54,9 +56,10 @@ namespace HBB_Sharp
             state5 = 0;
             state6 = 0;
             state7 = 0;
+            order = InOrder;
         }
 
-        public void Exp(CAorder order)
+        public void Exp()
         {
             if (order == CAorder.first)
             {
@@ -92,7 +95,7 @@ namespace HBB_Sharp
             state1 = state1 ^ C0;
         }
 
-        public void EvolveCA256(CAorder order)
+        public void EvolveCA256()
         {
             if (order == CAorder.first)
             {

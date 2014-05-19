@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 namespace HBB_Sharp
 {
     [StructLayoutAttribute(LayoutKind.Explicit)]
-    public struct NLC
+    public class NLC
     {
         [FieldOffsetAttribute(0)]
         public UInt32 word;

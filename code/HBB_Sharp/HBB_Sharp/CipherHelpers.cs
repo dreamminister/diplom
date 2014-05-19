@@ -32,24 +32,24 @@ namespace HBB_Sharp
             0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
         };
 
-        public static void NLSub(ref NLC NLC0, ref NLC NLC1, ref NLC NLC2, ref NLC NLC3)
+        public static void NLSub(List<NLC> allNLC)
         {
-            NLC0.byte0 = byteSub[NLC0.byte0];
-            NLC0.byte1 = byteSub[NLC0.byte1];
-            NLC0.byte2 = byteSub[NLC0.byte2];
-            NLC0.byte3 = byteSub[NLC0.byte3];
-            NLC1.byte0 = byteSub[NLC1.byte0];
-            NLC1.byte1 = byteSub[NLC1.byte1];
-            NLC1.byte2 = byteSub[NLC1.byte2];
-            NLC1.byte3 = byteSub[NLC1.byte3];
-            NLC2.byte0 = byteSub[NLC2.byte0];
-            NLC2.byte1 = byteSub[NLC2.byte1];
-            NLC2.byte2 = byteSub[NLC2.byte2];
-            NLC2.byte3 = byteSub[NLC2.byte3];
-            NLC3.byte0 = byteSub[NLC3.byte0];
-            NLC3.byte1 = byteSub[NLC3.byte1];
-            NLC3.byte2 = byteSub[NLC3.byte2];
-            NLC3.byte3 = byteSub[NLC3.byte3];
+            allNLC[0].byte0 = byteSub[allNLC[0].byte0];
+            allNLC[0].byte1 = byteSub[allNLC[0].byte1];
+            allNLC[0].byte2 = byteSub[allNLC[0].byte2];
+            allNLC[0].byte3 = byteSub[allNLC[0].byte3];
+            allNLC[1].byte0 = byteSub[allNLC[1].byte0];
+            allNLC[1].byte1 = byteSub[allNLC[1].byte1];
+            allNLC[1].byte2 = byteSub[allNLC[1].byte2];
+            allNLC[1].byte3 = byteSub[allNLC[1].byte3];
+            allNLC[2].byte0 = byteSub[allNLC[2].byte0];
+            allNLC[2].byte1 = byteSub[allNLC[2].byte1];
+            allNLC[2].byte2 = byteSub[allNLC[2].byte2];
+            allNLC[2].byte3 = byteSub[allNLC[2].byte3];
+            allNLC[3].byte0 = byteSub[allNLC[3].byte0];
+            allNLC[3].byte1 = byteSub[allNLC[3].byte1];
+            allNLC[3].byte2 = byteSub[allNLC[3].byte2];
+            allNLC[3].byte3 = byteSub[allNLC[3].byte3];
         }
 
         public static UInt32 CLShift(UInt32 A, int I)
@@ -58,14 +58,14 @@ namespace HBB_Sharp
             return result;
         }
 
-        public static void Fold(ref NLC NLC0, ref NLC NLC1, ref NLC NLC2, ref NLC NLC3)
+        public static void Fold(List<NLC> allNLC)
         {
             UInt32 tmp0 = Program.KEY[0] ^ Program.KEY[2];
             UInt32 tmp1 = Program.KEY[1] ^ Program.KEY[3];
-            NLC0.word = tmp0;
-            NLC1.word = tmp1;
-            NLC2.word = ~tmp0;
-            NLC3.word = ~tmp1;
+            allNLC[0].word = tmp0;
+            allNLC[1].word = tmp1;
+            allNLC[2].word = ~tmp0;
+            allNLC[3].word = ~tmp1;
         }
 
         public static void transpose32(ref UInt32 arr0, ref UInt32 arr1, ref UInt32 arr2, ref UInt32 arr3)
@@ -111,39 +111,39 @@ namespace HBB_Sharp
             arr3 = tmp0 ^ tmp2;
         }
 
-        public static void Round(CA FirstCA, CA SecondCA, ref NLC NLC0, ref NLC NLC1, ref NLC NLC2, ref NLC NLC3)
+        public static void Round(CA FirstCA, CA SecondCA, List<NLC> allNLC)
 	    {
-            NLSub(ref NLC0, ref NLC1, ref NLC2, ref NLC3);
-	        UInt32 tmp0 = NLC0.word ^ NLC1.word ^ NLC2.word ^ NLC3.word;
-	        NLC0.word = CLShift(tmp0^NLC0.word,4);
-	        NLC1.word = CLShift(tmp0^NLC1.word,12);
-	        NLC2.word = CLShift(tmp0^NLC2.word,20);
-	        NLC3.word = CLShift(tmp0^NLC3.word,28);
-	        transpose32(ref NLC0.word,ref NLC1.word, ref NLC2.word, ref NLC3.word);
-            NLSub(ref NLC0, ref NLC1, ref NLC2, ref NLC3);
-            FirstCA.EvolveCA256(CAorder.first);
-            SecondCA.EvolveCA256(CAorder.second);
-            Program.KeyStream[0] = NLC0.word ^ FirstCA.state0;
-            Program.KeyStream[1] = NLC1.word ^ FirstCA.state7;
-            Program.KeyStream[2] = NLC2.word ^ SecondCA.state0;
-            Program.KeyStream[3] = NLC3.word ^ SecondCA.state7;
-            NLC0.word = NLC0.word ^ FirstCA.state3;
-            NLC1.word = NLC1.word ^ FirstCA.state4;
-            NLC2.word = NLC2.word ^ SecondCA.state3;
-            NLC3.word = NLC3.word ^ SecondCA.state4;
+            NLSub(allNLC);
+            UInt32 tmp0 = allNLC[0].word ^ allNLC[1].word ^ allNLC[2].word ^ allNLC[3].word;
+            allNLC[0].word = CLShift(tmp0 ^ allNLC[0].word, 4);
+            allNLC[1].word = CLShift(tmp0 ^ allNLC[1].word, 12);
+            allNLC[2].word = CLShift(tmp0 ^ allNLC[2].word, 20);
+            allNLC[3].word = CLShift(tmp0 ^ allNLC[3].word, 28);
+            transpose32(ref allNLC[0].word, ref allNLC[1].word, ref allNLC[2].word, ref allNLC[3].word);
+            NLSub(allNLC);
+            FirstCA.EvolveCA256();
+            SecondCA.EvolveCA256();
+            Program.KeyStream[0] = allNLC[0].word ^ FirstCA.state0;
+            Program.KeyStream[1] = allNLC[1].word ^ FirstCA.state7;
+            Program.KeyStream[2] = allNLC[2].word ^ SecondCA.state0;
+            Program.KeyStream[3] = allNLC[3].word ^ SecondCA.state7;
+            allNLC[0].word = allNLC[0].word ^ FirstCA.state3;
+            allNLC[1].word = allNLC[1].word ^ FirstCA.state4;
+            allNLC[2].word = allNLC[2].word ^ SecondCA.state3;
+            allNLC[3].word = allNLC[3].word ^ SecondCA.state4;
 	    }
 
-        public static void KeySetup(CA FirstCA, CA SecondCA, ref NLC NLC0, ref NLC NLC1, ref NLC NLC2, ref NLC NLC3)
+        public static void KeySetup(CA FirstCA, CA SecondCA, List<NLC> allNLC)
         {
             UInt32[,] Temp = new UInt32[4, 4];
             Temp[0,0] = Program.KeyStream[0]; Temp[0,1] = Program.KeyStream[1]; Temp[0,2] = Program.KeyStream[2]; Temp[0,3] = Program.KeyStream[3];
-            Round(FirstCA, SecondCA, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
+            Round(FirstCA, SecondCA, allNLC);
             Temp[1, 0] = Program.KeyStream[0]; Temp[1, 1] = Program.KeyStream[1]; Temp[1, 2] = Program.KeyStream[2]; Temp[1, 3] = Program.KeyStream[3];
-            Round(FirstCA, SecondCA, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
+            Round(FirstCA, SecondCA, allNLC);
             Temp[2, 0] = Program.KeyStream[0]; Temp[2, 1] = Program.KeyStream[1]; Temp[2, 2] = Program.KeyStream[2]; Temp[2, 3] = Program.KeyStream[3];
-            Round(FirstCA, SecondCA, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
+            Round(FirstCA, SecondCA, allNLC);
             Temp[3, 0] = Program.KeyStream[0]; Temp[3, 1] = Program.KeyStream[1]; Temp[3, 2] = Program.KeyStream[2]; Temp[3, 3] = Program.KeyStream[3];
-            Round(FirstCA, SecondCA, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
+            Round(FirstCA, SecondCA, allNLC);
 
             FirstCA.state0 = FirstCA.state0 ^ Temp[3, 0]; 
             FirstCA.state1 = FirstCA.state1 ^ Temp[3, 1];
@@ -163,82 +163,45 @@ namespace HBB_Sharp
             SecondCA.state7 = SecondCA.state7 ^ Temp[0, 3];
         }
 
-        public static void Encrypt(CA FirstCA, CA SecondCA, ref NLC NLC0, ref NLC NLC1, ref NLC NLC2, ref NLC NLC3, ref UInt32[] M, ref UInt32[] C) 
+        public static void InitBlockList(List<Block> BlockList, ref UInt32[] inArray) 
         {
-            int BlockNumber = M.Length / 4;
-            //C[12] = 0; C[13] = 0; C[14] = 0;
+            int NumberOfBlocks = inArray.Length / 4;
+
+            for (int i = 0; i < inArray.Length; i = i + 4) 
+            {
+                Block currentBlock = new Block(ref inArray, i);
+                BlockList.Add(currentBlock);
+            }
+        }
+
+        public static void Encrypt(CA FirstCA, CA SecondCA, List<NLC> allNLC, List<Block> Messages, List<Block> Ciphers) 
+        {
+            int BlockNumber = Messages.Count;
+
             for (int i = 0; i < BlockNumber; i++)
 	        {
-                Round(FirstCA, SecondCA, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
-                int index = 4 * i;
+                Round(FirstCA, SecondCA, allNLC);
 		        // encryption
-                C[0 + index] = M[0 + index] ^ Program.KeyStream[0];
-                C[1 + index] = M[1 + index] ^ Program.KeyStream[1];
-                C[2 + index] = M[2 + index] ^ Program.KeyStream[2];
-                C[3 + index] = M[3 + index] ^ Program.KeyStream[3];
-
-                //FirstCA.Exp(CAorder.first);
-                //SecondCA.Exp(CAorder.second);
-                //if (i == 0)
-                //{
-                //    FirstCA.MergeWithCipher(C[index], C[12], C[13], C[14]);
-                //    SecondCA.MergeWithCipher(C[index], C[12], C[13], C[14]);
-                //    CipherHelpers.Fold(ref NLC0, ref NLC1, ref NLC2, ref NLC3);
-                //    NLC0.word = NLC0.word ^ C[index] ^ C[12] ^ C[13] ^ C[14];
-                //    NLC1.word = NLC1.word ^ C[index] ^ C[12] ^ C[13] ^ C[14];
-                //    NLC2.word = NLC2.word ^ C[index] ^ C[12] ^ C[13] ^ C[14];
-                //    NLC3.word = NLC3.word ^ C[index] ^ C[12] ^ C[13] ^ C[14];
-                //}
-                //else
-                //{
-                //    FirstCA.MergeWithCipher(C[index], C[index - 1], C[index - 2], C[index - 3]);
-                //    SecondCA.MergeWithCipher(C[index], C[index - 1], C[index - 2], C[index - 3]);
-                //    CipherHelpers.Fold(ref NLC0, ref NLC1, ref NLC2, ref NLC3);
-                //    NLC0.word = NLC0.word ^ C[index] ^ C[index - 1] ^ C[index - 2] ^ C[index - 3];
-                //    NLC1.word = NLC1.word ^ C[index] ^ C[index - 1] ^ C[index - 2] ^ C[index - 3];
-                //    NLC2.word = NLC2.word ^ C[index] ^ C[index - 1] ^ C[index - 2] ^ C[index - 3];
-                //    NLC3.word = NLC3.word ^ C[index] ^ C[index - 1] ^ C[index - 2] ^ C[index - 3];
-                //}
+                Ciphers[i].first    = Messages[i].first  ^ Program.KeyStream[0];
+                Ciphers[i].second   = Messages[i].second ^ Program.KeyStream[1];
+                Ciphers[i].third    = Messages[i].third  ^ Program.KeyStream[2];
+                Ciphers[i].fourth   = Messages[i].fourth ^ Program.KeyStream[3];
 	        } // end of key generation
         }
 
-        public static void Decrypt(CA FirstCA, CA SecondCA, ref NLC NLC0, ref NLC NLC1, ref NLC NLC2, ref NLC NLC3, ref UInt32[] M, ref UInt32[] C) 
+        public static void Decrypt(CA FirstCA, CA SecondCA, List<NLC> allNLC, List<Block> Messages, List<Block> Ciphers) 
         {
-            int BlockNumber = C.Length / 4;
-            //C[12] = 0; C[13] = 0; C[14] = 0;
+            int BlockNumber = Messages.Count;
+
             for (int i = 0; i < BlockNumber; i++)
             {
-                Round(FirstCA, SecondCA, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
-                int index = 4 * i;
+                Round(FirstCA, SecondCA, allNLC);
                 // decryption
-                M[0 + index] = C[0 + index] ^ Program.KeyStream[0];
-                M[1 + index] = C[1 + index] ^ Program.KeyStream[1];
-                M[2 + index] = C[2 + index] ^ Program.KeyStream[2];
-                M[3 + index] = C[3 + index] ^ Program.KeyStream[3];
-
-                //FirstCA.Exp(CAorder.first);
-                //SecondCA.Exp(CAorder.second);
-                //if (i == 0)
-                //{
-                //    FirstCA.MergeWithCipher(C[index], C[12], C[13], C[14]);
-                //    SecondCA.MergeWithCipher(C[index], C[12], C[13], C[14]);
-                //    CipherHelpers.Fold(ref NLC0, ref NLC1, ref NLC2, ref NLC3);
-                //    NLC0.word = NLC0.word ^ C[index] ^ C[12] ^ C[13] ^ C[14];
-                //    NLC1.word = NLC1.word ^ C[index] ^ C[12] ^ C[13] ^ C[14];
-                //    NLC2.word = NLC2.word ^ C[index] ^ C[12] ^ C[13] ^ C[14];
-                //    NLC3.word = NLC3.word ^ C[index] ^ C[12] ^ C[13] ^ C[14];
-                //}
-                //else
-                //{
-                //    FirstCA.MergeWithCipher(C[index], C[index - 1], C[index - 2], C[index - 3]);
-                //    SecondCA.MergeWithCipher(C[index], C[index - 1], C[index - 2], C[index - 3]);
-                //    CipherHelpers.Fold(ref NLC0, ref NLC1, ref NLC2, ref NLC3);
-                //    NLC0.word = NLC0.word ^ C[index] ^ C[index - 1] ^ C[index - 2] ^ C[index - 3];
-                //    NLC1.word = NLC1.word ^ C[index] ^ C[index - 1] ^ C[index - 2] ^ C[index - 3];
-                //    NLC2.word = NLC2.word ^ C[index] ^ C[index - 1] ^ C[index - 2] ^ C[index - 3];
-                //    NLC3.word = NLC3.word ^ C[index] ^ C[index - 1] ^ C[index - 2] ^ C[index - 3];
-                //}
-            } // end of key generation
+                Messages[i].first   = Ciphers[i].first  ^ Program.KeyStream[0];
+                Messages[i].second  = Ciphers[i].second ^ Program.KeyStream[1];
+                Messages[i].third   = Ciphers[i].third  ^ Program.KeyStream[2];
+                Messages[i].fourth  = Ciphers[i].fourth ^ Program.KeyStream[3];
+            }
         }
 
         public enum Action 
@@ -247,37 +210,58 @@ namespace HBB_Sharp
             Decrypt = 2
         }
 
-        public static void HBB(Action action) 
+        public static List<NLC> NLC_generate(int count)
         {
-            NLC NLC0 = new NLC(); NLC NLC1 = new NLC(); NLC NLC2 = new NLC(); NLC NLC3 = new NLC();
-            CA FirstCa = new CA(CAorder.first);
-            CA SecondCa = new CA(CAorder.second);
+            List<NLC> allNLC = new List<NLC>();
+            for (int i = 0; i < count; i++) 
+            {
+                allNLC.Add(new NLC());
+            }
+            return allNLC;
+        }
 
-            FirstCa.Exp(CAorder.first);
-            SecondCa.Exp(CAorder.second);
-            CipherHelpers.Fold(ref NLC0, ref NLC1, ref NLC2, ref NLC3);
+        public static void HBB(Action action, List<Block> Messages, List<Block> Ciphers) 
+        {
+            List<NLC> allNLC = NLC_generate(4);
+            CA FirstCa = new CA(CAorder.first); CA SecondCa = new CA(CAorder.second);
+            
+            FirstCa.Exp(); SecondCa.Exp();
+
+            CipherHelpers.Fold(allNLC);
 
             for (int i = 0; i <= 12; i++)
             {
-                CipherHelpers.Round(FirstCa, SecondCa, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
+                CipherHelpers.Round(FirstCa, SecondCa, allNLC);
             }
 
-            CipherHelpers.KeySetup(FirstCa, SecondCa, ref NLC0, ref NLC1, ref NLC2, ref NLC3);
+            CipherHelpers.KeySetup(FirstCa, SecondCa, allNLC);
 
             if (action == Action.Encrypt)
             {
-                CipherHelpers.Encrypt(FirstCa, SecondCa, ref NLC0, ref NLC1, ref NLC2, ref NLC3, ref Program.M, ref Program.C);
-                // Place for SS mode
-                // 1. Exp()
-                // 2. LC[i] XOR C[i] || ... || C[i-3] => block
-                // 3. Fold()
-                // 4. NLC[i] XOR C[i] XOR ... XOR C[i-3]  => block
+                CipherHelpers.Encrypt(FirstCa, SecondCa, allNLC, Messages, Ciphers);
             }
             else if (action == Action.Decrypt)
             {
-                CipherHelpers.Decrypt(FirstCa, SecondCa, ref NLC0, ref NLC1, ref NLC2, ref NLC3, ref Program.M, ref Program.C);
-                // Place for SS mode
+                CipherHelpers.Decrypt(FirstCa, SecondCa, allNLC, Messages, Ciphers);
             }
+        }
+
+        public static void PrintBlocks(List<Block> Blocks) 
+        {
+            string coma = ", ";
+            foreach (Block block in Blocks)
+                Console.Write(block.first + coma + block.second + coma + block.third + coma + block.fourth + coma);
+            Console.WriteLine();
+        }
+
+        public static void SSmode(CA FirstCA, CA SecondCA, List<NLC> allNLC, List<Block> Messages, List<Block> Ciphers, int index)
+        {
+            // Place for SS mode
+            // 1. Exp()
+            // 2. LC[i] XOR C[i] || ... || C[i-3] => block
+            // 3. Fold()
+            // 4. NLC[i] XOR C[i] XOR ... XOR C[i-3]  => block
+            FirstCA.Exp(); SecondCA.Exp(); // Exp(KEY)
         }
     }
 }

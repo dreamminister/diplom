@@ -41,6 +41,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Block.cs" />
     <Compile Include="CA.cs" />
     <Compile Include="CipherHelpers.cs" />
     <Compile Include="NLC.cs" />
