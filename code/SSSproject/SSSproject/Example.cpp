@@ -1,4 +1,4 @@
-// SSSproject.cpp: определяет точку входа для консольного приложения.
+// SSSproject.cpp:
 //
 
 #include "stdafx.h"
@@ -8,7 +8,6 @@
 #include "sssmultab.h"
 #include <iostream>
 
-//Число необхідних додатковихпатернів, щоб відновити старший байт a_H
 #define NumberOfExtraPatterns 8
 
 /* some useful macros -- machine independent little-endian 2-byte words */

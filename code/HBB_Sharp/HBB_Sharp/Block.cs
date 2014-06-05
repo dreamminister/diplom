@@ -7,16 +7,11 @@ using System.Runtime.InteropServices;
 
 namespace HBB_Sharp
 {
-    [StructLayoutAttribute(LayoutKind.Explicit)]
     public class Block
     {
-        [FieldOffsetAttribute(0)]
         public UInt32 first;
-        [FieldOffsetAttribute(4)]
         public UInt32 second;
-        [FieldOffsetAttribute(8)]
         public UInt32 third;
-        [FieldOffsetAttribute(12)]
         public UInt32 fourth;
 
         public Block(ref UInt32[] initBlock, int index) 
